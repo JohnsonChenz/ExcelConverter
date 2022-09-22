@@ -6,7 +6,9 @@
   "unity": "2021.3",
   "license": "MIT",
   "dependencies": {},
+  "keywords": ["excel", "converter", "excelconverter"],
+  "category": "ExcelConverter",
   "author": {
-    "name": "wfto0000"
-  },
+  	"name": "johnsonchen"
+  }
 }
