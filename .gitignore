@@ -1,0 +1,8 @@
+#參考 https://gitbook.tw/chapters/using-git/ignore
+
+Library
+Temp
+Build
+Logs
+obj/
+.vs/

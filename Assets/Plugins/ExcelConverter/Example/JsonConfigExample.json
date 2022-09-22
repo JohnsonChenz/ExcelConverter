@@ -1,0 +1,12 @@
+[
+  {
+    "mainKeyType": "Uppercase",
+    "subKeyType": "Uppercase",
+    "mainKeyColumn": 1,
+    "subKeyRow": 1,
+    "firstDataRow": 2,
+    "dataList": [
+      "Excel_Sheet_Example"
+    ]
+  }
+]
