@@ -1,12 +1,16 @@
-![image](https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/ExcelConverter.png)
 
 # ExcelConverter for Unity
 An editor tool that allows you convert excel(xlsx/xls) into json/bson files.
+
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/ExcelConverter.png" height="50%" width="50%"/>
 
 ## Quick Installnation:
 ### Required for installation:
 - Unity **2020.3.11** or higher
 - Unity version below **2020.3.11** needs install [Json.NET](https://github.com/jilleJr/Newtonsoft.Json-for-Unity)
+
+### Install via git URL
+Add https://github.com/JohnsonChenz/ExcelConverter.git?path=Assets/Plugins/ExcelConverter to Package Manager.
 
 ## Features:
 - Convert excel into json/bson
@@ -23,12 +27,14 @@ An editor tool that allows you convert excel(xlsx/xls) into json/bson files.
 - **Example of Excel & Json Config file is provided in project**.
 
 ## Setup you own json config with json config generator
-- The way your excel file being coverted is based on the Mainkey/Subkey rule you like in the excel.   
-- So you will need to create a json config file to determine how your excel file will be converted into json/bson data.  
-- In ExcelConverter window, click the button **Json Config Generator**, to open the generator. 
+
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/JsonConfigGenerator.png" height="50%" width="50%"/>
+
+- The way your excel file being coverted is based on the Mainkey/Subkey rule you like in the excel,So you will need to create a json config file to determine how your excel file will be converted into json/bson data.  
+- In **ExcelConverter window**, click the button **Json Config Generator**, to open the generator. 
 - Create and setup single/multiple json config based on your needs.
 - Save set-up json config to json file somewhere you like,then browse the path of it in ExcelConverter.
-- When converting,ExcelConverter will load json config file from your browsed path to convert excel file into json/bson based on the setting of the json config file.
+- When converting,ExcelConverter will load json config file from your browsed path to convert excel file into json/bson based on the setting of the json config.
 
 ## Simple explanation of Json Config Class
 **MainKeyType (enum)**
@@ -53,9 +59,17 @@ An editor tool that allows you convert excel(xlsx/xls) into json/bson files.
 - List of sheet name that will apply settings above for converting.
 
 ## Converted result showcase
-Excel sheet : 
+Excel sheet :  
 
-1. Mainkey + Subkey
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/ExcelSheet.png" height="80%" width="80%"/>
+
+### Mainkey + Subkey :
+
+Config :
+
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/WithMainKeyAndSubKey.png" height="50%" width="50%"/>
+
+Result :
 ```json
 {
 	"export_type": "JObject",
@@ -97,7 +111,13 @@ Excel sheet :
 }
 ```
 
-2. Mainkey only
+### Mainkey only :
+
+Config :
+
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/WithMainKeyOnly.png" height="50%" width="50%"/>
+
+Result :
 ```json
 {
 	"export_type": "JObject",
@@ -145,7 +165,13 @@ Excel sheet :
 }
 ```
 
-3. Subkey only
+### Subkey only :
+
+Config :
+
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/WithSubkeyOnly.png" height="50%" width="50%"/>
+
+Result :
 ```json
 {
 	"export_type": "JArray",
@@ -190,7 +216,13 @@ Excel sheet :
 }
 ```
 
-4. Double mainkey
+### Double mainkey :
+
+Config :
+
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/DoubleMainKey.png" height="50%" width="50%"/>
+
+Result :
 ```json
 {
 	"export_type": "JObject",
@@ -229,7 +261,13 @@ Excel sheet :
 }
 ```
 
-5. No key
+### No key :
+
+Config :
+
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/WithoutMainKeyAndSubKey.png" height="50%" width="50%"/>
+
+Result :
 ```json
 {
 	"export_type": "JArray",
