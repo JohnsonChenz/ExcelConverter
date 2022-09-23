@@ -49,7 +49,7 @@ Add https://github.com/JohnsonChenz/ExcelConverter.git?path=Assets/Plugins/Excel
 - Extra : When you mainkey data is composed of **multiple columns** in excel sheet,for example,when your prefered mainkey data is made up of **column 1** + **column 2** in excel sheet,set the value to 2.
 
 **SubKeyRow (int)**
-- Determine which row of excel will be added as subkey data, if subkey data is valid, actual data of excel will package with **json object(map)**
+- Determine which row of excel will be added as subkey, if subkey data is valid, actual data of excel will package with **json object(map)**
 - Set it as 0 when you don't wanna add subkey to your converted data, actual data of excel will package with **json array(map)**
 
 **FirstDataRow (int)**
