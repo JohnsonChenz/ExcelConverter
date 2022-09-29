@@ -31,7 +31,7 @@ Add https://github.com/JohnsonChenz/ExcelConverter.git?path=Assets/Plugins/Excel
 <img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/JsonConfigGenerator.png" height="50%" width="50%"/>
 
 - The way your excel file being converted is based on the Mainkey/Subkey rule you like in the excel,so,you will need to create a json config file to determine how your excel file will be converted into json/bson data.  
-- In **ExcelConverter window**, click the button **Json Config Generator**, to open the generator. 
+- In **ExcelConverter window**, click the button **Json Config Generator** to open the generator. 
 - Create and setup single/multiple json config based on your needs.
 - Save set-up json config to json file somewhere you like,then browse the path of it in ExcelConverter.
 - When converting,ExcelConverter will load json config file from your browsed path to convert excel file into json/bson based on the setting of the json config.
