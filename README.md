@@ -319,7 +319,7 @@ Result :
 ```
 
 ## Converting rules about excel
-1. If subkey field's name contains symbol \* or filled as "empty",column of the subkey will be ignored read into converted data.
+1. If a certain subkey field's name contains symbol \* or filled as "empty",it's column will be totally ignored read into converted data.
 2. Actual data field that filled in like [element1,element2,element3.....] will be convert into data as **json array**.
 
 ## License
