@@ -1,4 +1,4 @@
-.unity-base-text-field {
+﻿.unity-base-text-field {
 }
 
 .unity-custom-toggle {
@@ -54,4 +54,11 @@
 .unity-custom-text {
     margin-top: -1px;
     min-width: auto;
+}
+
+.unity-progress-bar__title {
+   text-overflow: ellipsis;
+   -unity-text-overflow-position: middle;
+   overflow: hidden;
+   white-space: nowrap;
 }

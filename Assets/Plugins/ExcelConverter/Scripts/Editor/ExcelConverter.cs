@@ -471,7 +471,7 @@ namespace ExcelConverter.Editor
                     if (!this.isEditorRunning) break;
 
                     this.excelLoadingProgress.value = i + 1;
-                    this.excelLoadingProgress.title = $"({i + 1}/{excelFiles.Count}) 【{excelFiles[i].FullName}】";
+                    this.excelLoadingProgress.title = $"({this.excelLoadingProgress.value}/{excelFiles.Count}) 【{excelFiles[i].FullName.Replace("\\", "\\\\")}】";
 
                     await Task.Yield();
 

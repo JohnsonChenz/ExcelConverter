@@ -2,7 +2,7 @@
   "name": "com.unity.excelconverter",
   "displayName": "ExcelConverter",
   "description": "An editor tool that allows you convert excel(xlsx/xls) into json/bson files.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "unity": "2021.3",
   "license": "MIT",
   "dependencies": {},
