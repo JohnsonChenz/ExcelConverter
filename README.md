@@ -10,7 +10,10 @@ An editor tool that allows you convert excel(xlsx/xls) into json/bson files.
 - Unity version below **2020.3.11** needs install [Json.NET](https://github.com/jilleJr/Newtonsoft.Json-for-Unity)
 
 ### Install via git URL
-Add ``` https://github.com/JohnsonChenz/ExcelConverter.git?path=Assets/Plugins/ExcelConverter ``` to Package Manager.
+Add url below to Package Manager.
+``` 
+https://github.com/JohnsonChenz/ExcelConverter.git?path=Assets/Plugins/ExcelConverter 
+```
 
 ## Features:
 - Convert excel into json/bson
