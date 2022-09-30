@@ -70,15 +70,14 @@ namespace ExcelConverter.Editor
         private Button openOutPathBtn = null;
         private ScrollView scrollViewExcelFiles = null;
         private PopupField<string> exportOptionPop = null;
-        public ProgressBar excelLoadingProgress { get; private set; }
+        private ProgressBar excelLoadingProgress = null;
 
         [MenuItem("Plugins/Excel Converter")]
         static void Init()
         {
             var window = GetWindow<ExcelConverterEditor>();
             window.titleContent = new GUIContent("ExcelConverter Tool");
-            window.minSize = new Vector2(536, 723);
-            window.maxSize = new Vector2(536, 723);
+            window.minSize = new Vector2(540, 760);
         }
 
         private async void OnEnable()

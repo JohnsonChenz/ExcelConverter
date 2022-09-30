@@ -15,7 +15,7 @@
     font-size: 12px;
     -unity-text-align: middle-center;
     opacity: 1;
-    color: rgb(196, 196, 196);
+    color: rgb(252, 255, 255);
     align-items: auto;
     justify-content: flex-start;
     max-width: none;

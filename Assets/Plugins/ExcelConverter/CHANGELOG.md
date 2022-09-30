@@ -1,5 +1,8 @@
 ## CHANGELOG
 
+### v1.0.2
+- Totally re-layout the ExcelConverter editor.
+
 ### v1.0.1
 - Fixed : Overflow display of Progressbar's text.
 
