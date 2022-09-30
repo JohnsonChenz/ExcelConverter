@@ -12,7 +12,7 @@ An editor tool that allows you convert excel(xlsx/xls) into json/bson files.
 ### Install via git URL
 Add url below to Package Manager.
 ``` 
-https://github.com/JohnsonChenz/ExcelConverter.git?path=Assets/Plugins/ExcelConverter 
+https://github.com/JohnsonChenz/ExcelConverter.git?path=Assets/Plugins/ExcelConverter
 ```
 
 ## Features:
