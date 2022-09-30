@@ -2,7 +2,7 @@
 # ExcelConverter for Unity
 An editor tool that allows you convert excel(xlsx/xls) into json/bson files.
 
-<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/ExcelConverter.png" height="50%" width="50%"/>
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/ExcelConverter_New.png" height="50%" width="50%"/>
 
 ## Quick Installnation:
 ### Required for installation:
