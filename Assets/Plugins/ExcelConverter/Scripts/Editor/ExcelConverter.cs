@@ -77,7 +77,7 @@ namespace ExcelConverter.Editor
         {
             var window = GetWindow<ExcelConverterEditor>();
             window.titleContent = new GUIContent("ExcelConverter Tool");
-            window.minSize = new Vector2(540, 760);
+            window.minSize = new Vector2(540, 770);
         }
 
         private async void OnEnable()
@@ -179,6 +179,8 @@ namespace ExcelConverter.Editor
             this.exportOptionPop.value = EditorPrefs.GetString(keyExportType, ExportType.Json);
             this.jsonFormattingTgl.value = EditorPrefs.GetBool(keyJsonFormatting, false);
             this.autoScanTgl.value = EditorPrefs.GetBool(keyAutoScan, false);
+
+            this._RefreshJsonFormattingTgl();
         }
 
         private void _InitEvents()
@@ -282,21 +284,11 @@ namespace ExcelConverter.Editor
             this.exportOptionPop.RegisterCallback<ChangeEvent<string>>((evt) =>
             {
                 this.exportOptionPop.value = evt.newValue;
-                switch (this.exportOptionPop.value)
-                {
-                    case ExportType.Json:
-                        EditorPrefs.SetString(keyExportType, ExportType.Json);
-                        this.jsonFormattingTgl.SetEnabled(true);
-                        break;
-                    case ExportType.Both:
-                        EditorPrefs.SetString(keyExportType, ExportType.Both);
-                        this.jsonFormattingTgl.SetEnabled(true);
-                        break;
-                    case ExportType.Bson:
-                        EditorPrefs.SetString(keyExportType, ExportType.Bson);
-                        this.jsonFormattingTgl.SetEnabled(false);
-                        break;
-                }
+
+                EditorPrefs.SetString(keyExportType, this.exportOptionPop.value);
+
+                this._RefreshJsonFormattingTgl();
+
                 LogAdder.AddLog(string.Format("目前輸出檔案類型為:{0}", this.exportOptionPop.value));
             });
 
@@ -470,7 +462,7 @@ namespace ExcelConverter.Editor
                     if (!this.isEditorRunning) break;
 
                     this.excelLoadingProgress.value = i + 1;
-                    this.excelLoadingProgress.title = $"({this.excelLoadingProgress.value}/{excelFiles.Count}) 【{excelFiles[i].FullName.Replace("\\", "\\\\")}】";
+                    this.excelLoadingProgress.title = $"({this.excelLoadingProgress.value}/{excelFiles.Count}) 【{excelFiles[i].Name}】";
 
                     await Task.Yield();
 
@@ -738,6 +730,22 @@ namespace ExcelConverter.Editor
             this.exportBtn.SetEnabled(isOn);
             this.chooseAllTgl.SetEnabled(isOn);
             this.scrollViewExcelFiles.SetEnabled(isOn);
+        }
+
+        private void _RefreshJsonFormattingTgl()
+        {
+            switch (this.exportOptionPop.value)
+            {
+                case ExportType.Json:
+                    this.jsonFormattingTgl.SetEnabled(true);
+                    break;
+                case ExportType.Both:
+                    this.jsonFormattingTgl.SetEnabled(true);
+                    break;
+                case ExportType.Bson:
+                    this.jsonFormattingTgl.SetEnabled(false);
+                    break;
+            }
         }
 
         public void SetProgressBarVisble(bool isOn)

@@ -1,5 +1,10 @@
 ## CHANGELOG
 
+### v1.0.3
+- Fixed : Json-Formatting Toggle does not Enable/Disable properly according to the Export Type Option.
+- Simplified path information of progress bar.
+- Adjusted min size of Editor.
+
 ### v1.0.2
 - Totally re-layout the ExcelConverter editor.
 

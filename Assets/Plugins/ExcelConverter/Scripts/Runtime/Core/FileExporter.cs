@@ -116,7 +116,7 @@ namespace ExcelConverter
             string path = dstFolder + fileName + ".json";
 
             // 更新進度調顯示
-            this.progressBar.title = $"({this.progressBar.value}/{this.progressBar.highValue}) 【{path}】";
+            this.progressBar.title = $"({this.progressBar.value}/{this.progressBar.highValue}) 【{fileName}.json】";
 
             // 輸出檔案至目標路徑
             File.WriteAllText(path, json);
@@ -152,7 +152,7 @@ namespace ExcelConverter
             string path = dstFolder + fileName + ".bytes";
 
             // 更新進度調顯示
-            this.progressBar.title = $"({this.progressBar.value}/{this.progressBar.highValue}) 【{path}】";
+            this.progressBar.title = $"({this.progressBar.value}/{this.progressBar.highValue}) 【{fileName}.bytes】";
 
             // 輸出檔案至目標路徑
             File.WriteAllBytes(path, bson);
