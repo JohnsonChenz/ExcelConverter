@@ -13,13 +13,16 @@ namespace ExcelConverter
     {
         // 用來檢驗Json格式是否正確的字串
         [NonSerialized]
-        public static readonly string[] configKeyChecker = new string[6]
+        public static readonly string[] configKeyChecker = new string[]
         {
-            "firstDataRow",
-            "mainKeyColumn",
-            "subKeyRow",
+            "enableMainKey",
             "mainKeyType",
+            "mainKeySelectType",
+            "columnOfMainKey",
+            "enableSubKey",
             "subKeyType",
+            "rowOfSubKey",
+            "rowOfFirstData",
             "dataList"
         };
 
@@ -30,18 +33,29 @@ namespace ExcelConverter
             Uppercase,
         }
 
-        [Header("【主Key字母類型】"), JsonConverter(typeof(StringEnumConverter))]
+        public enum MainKeySelectType
+        {
+            FirstNColumn,
+            SpecificColumn
+        }
+        [Tooltip("【是否啟用Mainkey】")]
+        public bool enableMainKey;
+        [Tooltip("【主Key字母類型】"), JsonConverter(typeof(StringEnumConverter)), DrawIf("enableMainKey", true)]
         public KeyType mainKeyType;
-        [Header("【副Key字母類型】"), JsonConverter(typeof(StringEnumConverter))]
+        [Tooltip("【Mainkey挑選模式】"), JsonConverter(typeof(StringEnumConverter)), DrawIf("enableMainKey", true)]
+        public MainKeySelectType mainKeySelectType;
+        [Tooltip("【主Key欄】"), DrawIf("enableMainKey", true)]
+        public int columnOfMainKey;
+        [Tooltip("【是否啟用Subkey】")]
+        public bool enableSubKey;
+        [Tooltip("【副Key字母類型】"), JsonConverter(typeof(StringEnumConverter)), DrawIf("enableSubKey", true)]
         public KeyType subKeyType;
-        [Header("【主Key欄】")]
-        public int mainKeyColumn;
-        [Header("【副Key列】")]
-        public int subKeyRow;
-        [Header("【數據資料起始列】")]
-        public int firstDataRow;
+        [Tooltip("【副Key列】"), DrawIf("enableSubKey", true)]
+        public int rowOfSubKey;
+        [Tooltip("【數據資料起始列】")]
+        public int rowOfFirstData;
 
-        [Header("【文件名稱列表】")]
+        [Tooltip("【文件名稱列表】")]
         public List<string> dataList;
 
         public JsonConfig()

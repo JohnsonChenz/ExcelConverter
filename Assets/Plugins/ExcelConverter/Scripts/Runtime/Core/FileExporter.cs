@@ -12,7 +12,7 @@ namespace ExcelConverter
 {
     public class FileExporter
     {
-        public class ExportDataDefine
+        class ExportDataDefine
         {
             public const string keyExportType = "export_type";
             public const string keyExportData = "data";
@@ -20,25 +20,17 @@ namespace ExcelConverter
             public const string exportTypeJArray = "JArray";
         }
 
-        private readonly List<SheetExportConfig> exportSettingList;
+        private readonly List<SheetExportConfig> listSheetExportConfig;
         private readonly string savePath;
-        private readonly int formattingOption;
+        private readonly bool formatJson;
         private readonly ProgressBar progressBar;
 
-        public FileExporter(List<SheetExportConfig> exportSettingList, string savePath, bool isJsonFormatting, ProgressBar progressBar)
+        public FileExporter(List<SheetExportConfig> listSheetExportConfig, string savePath, bool formatJson, ProgressBar progressBar)
         {
-            this.exportSettingList = exportSettingList;
+            this.listSheetExportConfig = listSheetExportConfig;
             this.savePath = savePath;
             this.progressBar = progressBar;
-
-            if (isJsonFormatting)
-            {
-                this.formattingOption = 1;
-            }
-            else
-            {
-                this.formattingOption = 0;
-            }
+            this.formatJson = formatJson;
         }
 
         public async Task<int> SaveJsonFiles()
@@ -58,34 +50,27 @@ namespace ExcelConverter
 
         private async Task<int> _ReadAllSheets(Func<SheetExportConfig, string, Task<int>>[] exportFuncs)
         {
-            if (this.exportSettingList.Count <= 0)
+            if (this.listSheetExportConfig.Count <= 0)
             {
                 LogAdder.AddLogError("沒有讀取到任何Excel!!");
                 return 0;
             }
 
             this.progressBar.lowValue = 0;
-            this.progressBar.highValue = this.exportSettingList.Count(x => x.ableToExport) * exportFuncs.Length;
+            this.progressBar.highValue = this.listSheetExportConfig.Count * exportFuncs.Length;
 
             int result = 0;
 
             foreach (var exportFunc in exportFuncs)
             {
-                for (var i = 0; i < this.exportSettingList.Count; i++)
+                for (var i = 0; i < this.listSheetExportConfig.Count; i++)
                 {
-                    if (this.exportSettingList[i].ableToExport)
-                    {
-                        // 檢測Sheet名稱是否有重名
-                        string adjustedName = this._VerifyDuplicatedName(this.exportSettingList[i].sheet);
+                    // 檢測Sheet名稱是否有重名
+                    string adjustedName = this._VerifyDuplicatedName(this.listSheetExportConfig[i].sheet);
 
-                        this.progressBar.value = result += await exportFunc(this.exportSettingList[i], adjustedName);
+                    this.progressBar.value = result += await exportFunc(this.listSheetExportConfig[i], adjustedName);
 
-                        await Task.Yield();
-                    }
-                    else
-                    {
-                        //Debug.LogError("此文件沒有在設定檔資料中或設定檔有誤 判定為無法輸出:" + this.exportSettings[i].sheet.TableName);
-                    }
+                    await Task.Yield();
                 }
             }
 
@@ -101,7 +86,7 @@ namespace ExcelConverter
             }
 
             // 將Sheet的資料序列化成Json字串
-            string json = await this._SerializeSheetToJson(exportSettings.sheet, exportSettings, this.formattingOption);
+            string json = await this._SerializeSheetToJson(exportSettings.sheet, exportSettings, this.formatJson);
 
             // 儲存檔案
             string dstFolder = this.savePath + "/json/";
@@ -132,7 +117,7 @@ namespace ExcelConverter
             }
 
             // 將Sheet的資料序列化成Json字串
-            string json = await this._SerializeSheetToJson(exportSettings.sheet, exportSettings, this.formattingOption);
+            string json = await this._SerializeSheetToJson(exportSettings.sheet, exportSettings, this.formatJson);
 
             // 儲存檔案
             string dstFolder = this.savePath + "/bson/";
@@ -159,24 +144,44 @@ namespace ExcelConverter
             return 1;
         }
 
-        private async Task<string> _SerializeSheetToJson(DataTable sheet, SheetExportConfig exportSettings, int FormattingOption = 0)
+        private async Task<string> _SerializeSheetToJson(DataTable sheet, SheetExportConfig exportSettings, bool formatJson)
         {
             int columns = sheet.Columns.Count;
             int rows = sheet.Rows.Count;
             string json = "";
 
             // 如果有主Key
-            if (exportSettings.mainKeyColumn > 0)
+            if (exportSettings.jsonConfig.enableMainKey)
             {
+                // 宣告存放MainKey的Column
+                List<int> mainKeyColumns = new List<int>();
+                switch (exportSettings.jsonConfig.mainKeySelectType)
+                {
+                    case JsonConfig.MainKeySelectType.FirstNColumn:
+                        for (int i = 0; i < exportSettings.jsonConfig.columnOfMainKey; i++)
+                        {
+                            mainKeyColumns.Add(i);
+                        }
+                        break;
+                    case JsonConfig.MainKeySelectType.SpecificColumn:
+                        string specificColumns = exportSettings.jsonConfig.columnOfMainKey.ToString();
+                        for (int i = 0; i < specificColumns.Length; i++)
+                        {
+                            int column = Convert.ToInt32(specificColumns[i].ToString()) - 1;
+                            mainKeyColumns.Add(column);
+                        }
+                        break;
+                }
+
                 // 如果有副Key
-                if (exportSettings.subKeyRow > 0)
+                if (exportSettings.jsonConfig.enableSubKey)
                 {
                     // 使用Map包Map處理
                     Dictionary<string, Dictionary<string, object>> columnData = new Dictionary<string, Dictionary<string, object>>();
 
                     // 由於Excel內Index(或是說外人眼中的Index)跟程式中不同，故減1
                     // 以"列"做讀取
-                    for (int i = exportSettings.firstDataRow - 1; i < rows; i++)
+                    for (int i = exportSettings.jsonConfig.rowOfFirstData - 1; i < rows; i++)
                     {
                         // 存放列資料
                         Dictionary<string, object> rowData = new Dictionary<string, object>();
@@ -185,9 +190,9 @@ namespace ExcelConverter
                         for (int j = 0; j < columns; j++)
                         {
                             // 副Key將不包含主Key欄之資料
-                            if (j < exportSettings.mainKeyColumn) continue;
+                            if (mainKeyColumns.Contains(j)) continue;
 
-                            string subKey = sheet.Rows[exportSettings.subKeyRow - 1][j].ToString().TrimEnd();  // 取第subKeyRow列的j欄當副Key，Index同樣做減1處理                                                                         
+                            string subKey = sheet.Rows[exportSettings.jsonConfig.rowOfSubKey - 1][j].ToString().TrimEnd();  // 取第subKeyRow列的j欄當副Key，Index同樣做減1處理                                                                         
 
                             // 刪除副Key中的@#字元                                                             
                             if (subKey.Contains("@") || subKey.Contains("#")) subKey = subKey.Replace("@", string.Empty).Replace("#", string.Empty);
@@ -195,7 +200,7 @@ namespace ExcelConverter
                             if (subKey.ToUpper() == "EMPTY" || subKey.Contains("*") || subKey == "") continue; // 假設副Key資料為empty或*或空字元 跳過
 
                             // 副Key大小寫設定
-                            switch (exportSettings.subKeyType)
+                            switch (exportSettings.jsonConfig.subKeyType)
                             {
                                 case JsonConfig.KeyType.None:
                                     break;
@@ -230,35 +235,60 @@ namespace ExcelConverter
                         // 開始設置主Key
                         string mainKey = "";
 
-                        if (exportSettings.mainKeyColumn > 0)
+                        for (int k = 0; k < mainKeyColumns.Count; k++)
                         {
-                            for (int k = 0; k < exportSettings.mainKeyColumn; k++)
+                            string accMainKey = "";
+
+                            int column = mainKeyColumns[k];
+                            // 防止IndexOutOfRange
+                            if (column < 0 || column >= sheet.Rows[i].ItemArray.Length)
                             {
-                                mainKey += sheet.Rows[i][k].ToString(); // 把第i列的第mainKeyColumn個(欄)數據當主key (因為是多Key 所以這裡String會做累加)
+                                UnityEngine.Debug.LogError($"IndexOutOfRange!! 無法新增主Key。請檢查資料表 : {sheet.TableName}的第{i + 1}列，第{column + 1}欄是否有資料");
+                                LogAdder.AddLogError($"IndexOutOfRange!! 無法新增主Key。請檢查資料表 : {sheet.TableName}的第{i + 1}列，第{column + 1}欄是否有資料");
+                                continue;
+                            }
+
+                            accMainKey = sheet.Rows[i][column].ToString();
+                            if (string.IsNullOrEmpty(accMainKey))
+                            {
+                                UnityEngine.Debug.LogError($"無主Key資料!! 請檢查資料表 : {sheet.TableName}的第{column + 1}欄，第{i + 1}列是否有資料");
+                                LogAdder.AddLogError($"無主Key資料!! 請檢查資料表 : {sheet.TableName}的第{column + 1}欄，第{i + 1}列是否有資料");
+                            }
+                            else
+                            {
+                                mainKey += accMainKey; // 把第i列的第mainKeyColumn個(欄)數據當主key (因為是多Key 所以這裡String會做累加)
                             }
                         }
 
-                        // 主Key大小寫設定
-                        switch (exportSettings.mainKeyType)
+                        if (string.IsNullOrEmpty(mainKey))
                         {
-                            case JsonConfig.KeyType.None:
-                                break;
-                            case JsonConfig.KeyType.Lowercase:
-                                mainKey = mainKey.ToLower();
-                                break;
-                            case JsonConfig.KeyType.Uppercase:
-                                mainKey = mainKey.ToUpper();
-                                break;
+                            UnityEngine.Debug.LogError($"組成的主Key資料為空!! SheetName : {sheet.TableName}. 請檢查對應資料表或是設定檔");
+                            LogAdder.AddLogError($"組成的主Key資料為空!! SheetName : {sheet.TableName}. 請檢查對應資料表或是設定檔");
                         }
+                        else
+                        {
+                            try
+                            {
+                                // 主Key大小寫設定
+                                switch (exportSettings.jsonConfig.mainKeyType)
+                                {
+                                    case JsonConfig.KeyType.None:
+                                        break;
+                                    case JsonConfig.KeyType.Lowercase:
+                                        mainKey = mainKey.ToLower();
+                                        break;
+                                    case JsonConfig.KeyType.Uppercase:
+                                        mainKey = mainKey.ToUpper();
+                                        break;
+                                }
 
-                        try
-                        {
-                            columnData.Add(mainKey, rowData); // 加入一列主Key及副Key含子資料
-                        }
-                        catch
-                        {
-                            UnityEngine.Debug.LogError(string.Format("【{0}】 with the same key has already been added. Key: {1}", sheet.TableName, mainKey));
-                            LogAdder.AddLogError(string.Format("【{0}】 with the same key has already been added. Key: {1}", sheet.TableName, mainKey));
+                                columnData.Add(mainKey, rowData); // 加入一列主Key及副Key含子資料
+                            }
+                            catch
+                            {
+                                UnityEngine.Debug.LogError(string.Format("【{0}】 with the same key has already been added. Key: {1}", sheet.TableName, mainKey));
+                                LogAdder.AddLogError(string.Format("【{0}】 with the same key has already been added. Key: {1}", sheet.TableName, mainKey));
+                            }
                         }
                     }
 
@@ -269,7 +299,7 @@ namespace ExcelConverter
                     };
 
                     // 將序列化後的Json轉為字串
-                    json = JsonConvert.SerializeObject(tData, (Formatting)FormattingOption);
+                    json = JsonConvert.SerializeObject(tData, formatJson ? Formatting.Indented : Formatting.None);
                     return json;
                 }
                 // 如果沒副Key
@@ -280,14 +310,14 @@ namespace ExcelConverter
 
                     // 由於Excel內Index(或是說外人眼中的Index)跟程式中不同，故減1
                     // 以"列"做讀取
-                    for (int i = exportSettings.firstDataRow - 1; i < rows; i++)
+                    for (int i = exportSettings.jsonConfig.rowOfFirstData - 1; i < rows; i++)
                     {
                         List<object> rowData = new List<object>();
 
                         // 以"欄"去設置資料
                         for (int j = 0; j < columns; j++)
                         {
-                            if (j < exportSettings.mainKeyColumn) continue;
+                            if (mainKeyColumns.Contains(j)) continue;
 
                             // 從主key欄位之後的欄位為起點開始放副資料
                             if (int.TryParse(sheet.Rows[i][j].ToString(), out int result)) // 如果資料可以被轉換成int
@@ -312,35 +342,60 @@ namespace ExcelConverter
                         // 開始設置主Key
                         string mainKey = "";
 
-                        if (exportSettings.mainKeyColumn > 0)
+                        for (int k = 0; k < mainKeyColumns.Count; k++)
                         {
-                            for (int k = 0; k < exportSettings.mainKeyColumn; k++)
+                            string accMainKey = "";
+
+                            int column = mainKeyColumns[k];
+                            // 防止IndexOutOfRange
+                            if (column < 0 || column >= sheet.Rows[i].ItemArray.Length)
                             {
-                                mainKey += sheet.Rows[i][k].ToString(); // 把第i列的第mainKeyColumn個(欄)數據當主key (因為是多Key 所以這裡String會做累加)
+                                UnityEngine.Debug.LogError($"IndexOutOfRange!! 無法新增主Key。請檢查資料表 : {sheet.TableName}的第{i + 1}列，第{column + 1}欄是否有資料");
+                                LogAdder.AddLogError($"IndexOutOfRange!! 無法新增主Key。請檢查資料表 : {sheet.TableName}的第{i + 1}列，第{column + 1}欄是否有資料");
+                                continue;
+                            }
+
+                            accMainKey = sheet.Rows[i][column].ToString();
+                            if (string.IsNullOrEmpty(accMainKey))
+                            {
+                                UnityEngine.Debug.LogError($"無主Key資料!! 請檢查資料表 : {sheet.TableName}的第{column + 1}欄，第{i + 1}列是否有資料");
+                                LogAdder.AddLogError($"無主Key資料!! 請檢查資料表 : {sheet.TableName}的第{column + 1}欄，第{i + 1}列是否有資料");
+                            }
+                            else
+                            {
+                                mainKey += accMainKey; // 把第i列的第mainKeyColumn個(欄)數據當主key (因為是多Key 所以這裡String會做累加)
                             }
                         }
 
-                        // 主Key大小寫設定         
-                        switch (exportSettings.mainKeyType)
+                        if (string.IsNullOrEmpty(mainKey))
                         {
-                            case JsonConfig.KeyType.None:
-                                break;
-                            case JsonConfig.KeyType.Lowercase:
-                                mainKey = mainKey.ToLower();
-                                break;
-                            case JsonConfig.KeyType.Uppercase:
-                                mainKey = mainKey.ToUpper();
-                                break;
+                            UnityEngine.Debug.LogError($"組成的主Key資料為空!! SheetName : {sheet.TableName}. 請檢查對應資料表或是設定檔");
+                            LogAdder.AddLogError($"組成的主Key資料為空!! SheetName : {sheet.TableName}. 請檢查對應資料表或是設定檔");
                         }
+                        else
+                        {
+                            try
+                            {
+                                // 主Key大小寫設定
+                                switch (exportSettings.jsonConfig.mainKeyType)
+                                {
+                                    case JsonConfig.KeyType.None:
+                                        break;
+                                    case JsonConfig.KeyType.Lowercase:
+                                        mainKey = mainKey.ToLower();
+                                        break;
+                                    case JsonConfig.KeyType.Uppercase:
+                                        mainKey = mainKey.ToUpper();
+                                        break;
+                                }
 
-                        try
-                        {
-                            columnData.Add(mainKey, rowData); // 加入一列主Key及副Key含子資料
-                        }
-                        catch
-                        {
-                            UnityEngine.Debug.LogError(string.Format("【{0}】 with the same key has already been added. Key: {1}", sheet.TableName, mainKey));
-                            LogAdder.AddLogError(string.Format("【{0}】 with the same key has already been added. Key: {1}", sheet.TableName, mainKey));
+                                columnData.Add(mainKey, rowData); // 加入一列主Key及副Key含子資料
+                            }
+                            catch
+                            {
+                                UnityEngine.Debug.LogError(string.Format("【{0}】 with the same key has already been added. Key: {1}", sheet.TableName, mainKey));
+                                LogAdder.AddLogError(string.Format("【{0}】 with the same key has already been added. Key: {1}", sheet.TableName, mainKey));
+                            }
                         }
                     }
 
@@ -351,7 +406,7 @@ namespace ExcelConverter
                     };
 
                     // 將序列化後的Json轉為字串
-                    json = JsonConvert.SerializeObject(tData, (Formatting)FormattingOption);
+                    json = JsonConvert.SerializeObject(tData, formatJson ? Formatting.Indented : Formatting.None);
                     return json;
                 }
             }
@@ -363,10 +418,10 @@ namespace ExcelConverter
 
                 // 由於Excel內Index(或是說外人眼中的Index)跟程式中不同，故減1
                 // 以"列"做讀取
-                for (int i = exportSettings.firstDataRow - 1; i < rows; i++)
+                for (int i = exportSettings.jsonConfig.rowOfFirstData - 1; i < rows; i++)
                 {
                     // 如果有副Key
-                    if (exportSettings.subKeyRow > 0)
+                    if (exportSettings.jsonConfig.enableSubKey)
                     {
                         // 存放列資料
                         Dictionary<string, object> rowData = new Dictionary<string, object>();
@@ -374,7 +429,7 @@ namespace ExcelConverter
                         // 以"欄"去設置副Key及資料
                         for (int j = 0; j < columns; j++)
                         {
-                            string subKey = sheet.Rows[exportSettings.subKeyRow - 1][j].ToString().TrimEnd(); // 取第subKeyRow列的j欄當副Key，Index同樣做減1處理                                                                         
+                            string subKey = sheet.Rows[exportSettings.jsonConfig.rowOfSubKey - 1][j].ToString().TrimEnd(); // 取第subKeyRow列的j欄當副Key，Index同樣做減1處理                                                                         
 
                             // 刪除副Key中的@#字元                                                             
                             if (subKey.Contains("@") || subKey.Contains("#")) subKey = subKey.Replace("@", string.Empty).Replace("#", string.Empty);
@@ -382,7 +437,7 @@ namespace ExcelConverter
                             if (subKey.ToUpper() == "EMPTY" || subKey.Contains("*") || subKey == "") continue; // 假設副Key資料為empty或*或空字元 跳過
 
                             // 副Key大小寫設定                                                                 
-                            switch (exportSettings.subKeyType)
+                            switch (exportSettings.jsonConfig.subKeyType)
                             {
                                 case JsonConfig.KeyType.None:
                                     break;
@@ -456,19 +511,17 @@ namespace ExcelConverter
                 };
 
                 // 將序列化後的Json轉為字串
-                json = JsonConvert.SerializeObject(tData, (Formatting)FormattingOption);
+                json = JsonConvert.SerializeObject(tData, formatJson ? Formatting.Indented : Formatting.None);
                 return json;
             }
         }
 
         private string _VerifyDuplicatedName(DataTable sheet)
         {
-            for (int i = 0; i < exportSettingList.Count; i++)
+            for (int i = 0; i < this.listSheetExportConfig.Count; i++)
             {
-                // 如果用來比對的檔案沒有要輸出就跳過
-                if (exportSettingList[i].ableToExport == false) continue;
                 // 如果兩個Sheet隸屬的Excel檔案不同，但名稱相同，就算重名
-                if (exportSettingList[i].sheet.Namespace != sheet.Namespace && exportSettingList[i].sheet.TableName == sheet.TableName)
+                if (this.listSheetExportConfig[i].sheet.Namespace != sheet.Namespace && this.listSheetExportConfig[i].sheet.TableName == sheet.TableName)
                 {
                     string adjustedName = "[" + sheet.Namespace + "]" + sheet.TableName;
                     LogAdder.AddLogError(string.Format("檢測到Sheet有重名 Sheet名稱:{0}，輸出檔名將會更改為:{1}!", sheet.TableName, adjustedName));

@@ -49,7 +49,7 @@ namespace ExcelConverter.Editor
 
         // --- 輸出相關
         private int genResult;                           // 輸出結果數量
-        private bool isJsonFormating = false;            // Json是否要格式化
+        private bool formatJson = false;            // Json是否要格式化
 
         // --- UI相關組件
         private TextField outPathText = null;
@@ -265,7 +265,7 @@ namespace ExcelConverter.Editor
                         Toggle tog = this.root.Q<Toggle>(this.excelsWithSheet[i].Namespace + this.excelsWithSheet[i].TableName);
                         tog.SetValueWithoutNotify(evt.newValue);
                     }
-                    this._UpdateToggleBoolStatus();
+                    this._RefreshUseFileStatus();
                 }
             });
 
@@ -276,7 +276,7 @@ namespace ExcelConverter.Editor
 
             this.jsonFormattingTgl.RegisterValueChangedCallback(evt =>
             {
-                this.isJsonFormating = evt.newValue;
+                this.formatJson = evt.newValue;
                 EditorPrefs.SetBool(keyJsonFormatting, evt.newValue);
             });
 
@@ -335,7 +335,7 @@ namespace ExcelConverter.Editor
             // 確定Json設定檔案轉換完成後，驗證所有檔案，名稱是否有被寫在Json設定檔內，有的話就部署相關設定
             List<SheetExportConfig> listSheetExportConfig = this._GetSheetExportConfig();
 
-            FileExporter fileExporter = new FileExporter(listSheetExportConfig, outPath, this.isJsonFormating, this.excelLoadingProgress);
+            FileExporter fileExporter = new FileExporter(listSheetExportConfig, outPath, this.formatJson, this.excelLoadingProgress);
 
             switch (this.exportOptionPop.value)
             {
@@ -532,7 +532,7 @@ namespace ExcelConverter.Editor
                             // 添加Toggle事件 點擊時更新isUseFiles List狀態
                             tog.RegisterValueChangedCallback(evt =>
                             {
-                                this._UpdateToggleBoolStatus();
+                                this._RefreshUseFileStatus();
                             });
 
                             // 將Toggle加到ScrollView裡頭
@@ -567,13 +567,18 @@ namespace ExcelConverter.Editor
             // 將Sheet一個一個做核對
             for (int i = 0; i < this.excelsWithSheet.Count; i++)
             {
-                SheetExportConfig sheetExportConfig = this._GenerateSheetExportConfig(this.excelsWithSheet[i], this.isUseFiles[i]);
-                if (sheetExportConfig != null) listSheetExportConfig.Add(sheetExportConfig);
-            }
+                DataTable sheet = this.excelsWithSheet[i];
 
-            for (int i = 0; i < listSheetExportConfig.Count; i++)
-            {
-                LogAdder.AddLog(string.Format("sheet >> 【{0}】, 是否可以被輸出: {1}", listSheetExportConfig[i].sheet, (listSheetExportConfig[i].ableToExport == true) ? "●" : "○"));
+                SheetExportConfig sheetExportConfig = this._GenerateSheetExportConfig(sheet, this.isUseFiles[i]);
+                if (sheetExportConfig != null)
+                {
+                    listSheetExportConfig.Add(sheetExportConfig);
+                    LogAdder.AddLog($"sheet >> 【{sheet.TableName}】, 是否可以被輸出: ●");
+                }
+                else
+                {
+                    LogAdder.AddLog($"sheet >> 【{sheet.TableName}】, 是否可以被輸出: ○");
+                }
             }
 
             return listSheetExportConfig;
@@ -581,41 +586,38 @@ namespace ExcelConverter.Editor
 
         private SheetExportConfig _GenerateSheetExportConfig(DataTable sheet, bool isUseFiles)
         {
-            // 初始預設為無法輸出
-            SheetExportConfig sheetExportConfig = new SheetExportConfig(sheet, false);
-
             // 如果檔案沒勾選 不做核對
-            if (isUseFiles == false)
+            if (!isUseFiles)
             {
                 LogAdder.AddLogError(string.Format("-------------\nSheet無勾選使用 名稱:{0}\n-------------", sheet.TableName));
+                return null;
             }
             else
             {
                 for (int i = 0; i < this.jsonConfigList.Count; i++)
                 {
-                    for (int j = 0; j < this.jsonConfigList[i].dataList.Count; j++)
+                    JsonConfig jsonConfig = this.jsonConfigList[i];
+
+                    for (int j = 0; j < jsonConfig.dataList.Count; j++)
                     {
-                        if (sheet.TableName == this.jsonConfigList[i].dataList[j])
+                        if (sheet.TableName == jsonConfig.dataList[j])
                         {
                             LogAdder.AddLog(string.Format("---------------\nSheet核對有資料 檔案名稱:{0}", sheet.TableName));
-                            LogAdder.AddLog(string.Format("數據資料起始列:{0}", this.jsonConfigList[i].firstDataRow));
-                            LogAdder.AddLog(string.Format("主Key欄:{0}", this.jsonConfigList[i].mainKeyColumn));
-                            LogAdder.AddLog(string.Format("副Key列:{0}", this.jsonConfigList[i].subKeyRow));
-                            LogAdder.AddLog(string.Format("主Key是否大小寫:{0}", this.jsonConfigList[i].mainKeyType));
-                            LogAdder.AddLog(string.Format("副Key是否大小寫:{0}\n-------------", this.jsonConfigList[i].subKeyType));
+                            LogAdder.AddLog(string.Format("數據資料起始列:{0}", jsonConfig.rowOfFirstData));
+                            LogAdder.AddLog(string.Format("是否啟用主Key:{0}", jsonConfig.enableMainKey));
+                            if (jsonConfig.enableMainKey)
+                            {
+                                LogAdder.AddLog(string.Format("主Key欄:{0}", jsonConfig.columnOfMainKey));
+                                LogAdder.AddLog(string.Format("主Key大小寫類型:{0}", jsonConfig.mainKeyType));
+                            }
+                            LogAdder.AddLog(string.Format("是否啟用副Key:{0}", jsonConfig.enableSubKey));
+                            if (jsonConfig.enableSubKey)
+                            {
+                                LogAdder.AddLog(string.Format("副Key列:{0}", jsonConfig.rowOfSubKey));
+                                LogAdder.AddLog(string.Format("副Key大小寫類型:{0}\n-------------", jsonConfig.subKeyType));
+                            }
 
-                            sheetExportConfig = new SheetExportConfig
-                            (
-                                sheet: sheet,
-                                ableToExport: true,
-                                mainKeyType: this.jsonConfigList[i].mainKeyType,
-                                subKeyType: this.jsonConfigList[i].subKeyType,
-                                mainKeyColumn: this.jsonConfigList[i].mainKeyColumn,
-                                subKeyRow: this.jsonConfigList[i].subKeyRow,
-                                firstDataRow: this.jsonConfigList[i].firstDataRow
-                            );
-
-                            return sheetExportConfig;
+                            return new SheetExportConfig(sheet, jsonConfig);
                         }
                     }
                 }
@@ -623,10 +625,10 @@ namespace ExcelConverter.Editor
 
             LogAdder.AddLogError(string.Format("-------------\nSheet核對無資料 名稱:{0}\n-------------", sheet.TableName));
 
-            return sheetExportConfig;
+            return null;
         }
 
-        private void _UpdateToggleBoolStatus()
+        private void _RefreshUseFileStatus()
         {
             if (this.excelsWithSheet.Count > 0)
             {

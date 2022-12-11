@@ -1,10 +1,13 @@
 [
   {
-    "mainKeyType": "Uppercase",
-    "subKeyType": "Uppercase",
-    "mainKeyColumn": 1,
-    "subKeyRow": 1,
-    "firstDataRow": 2,
+    "enableMainKey": true,
+    "mainKeyType": "None",
+    "mainKeySelectType": "FirstNColumn",
+    "columnOfMainKey": 1,
+    "enableSubKey": true,
+    "subKeyType": "None",
+    "rowOfSubKey": 1,
+    "rowOfFirstData": 2,
     "dataList": [
       "Excel_Sheet_Example"
     ]

@@ -40,25 +40,32 @@ https://github.com/JohnsonChenz/ExcelConverter.git?path=Assets/Plugins/ExcelConv
 - When converting,ExcelConverter will load json config file from your browsed path to convert excel file into json/bson based on the setting of the json config.
 
 ## Simple explanation of Json Config Class
-**MainKeyType (enum)**
-- Determine mainkey of converted data is uppercase or not.
+**EnableMainKey**
+- When **Enable**/**Disable**, converted **main json data** will be **json object(map)**/**json array(array)**,
 
-**SubKeyType (enum)**
-- Determine subkey of converted data is uppercase or not.
+**MainKeyType**
+- Determine MainKey of converted json data will be Uppercase, LowerCase or Remain the same.
 
-**MainKeyColumn (int)**
-- Determine which column of excel that will added as mainkey,if mainkey data is valid,converted json data will be **json object(map)**
-- Set it as 0 when you don't wanna add mainkey to your converted data,converted json data will be **json array(array)**.
-- Extra : When you mainkey data is composed of **multiple columns** in excel sheet,for example,when your prefered mainkey data is made up of **column 1** + **column 2** in excel sheet,set the value to 2.
+**MainKeyChooseType**
+- FirstNColumn : ColumnOfMainKey = 1 = Add column 1 as MainKey, ColumnOfMainKey = 3 = Add column 1 + 2 + 3 as MainKey
+- SpecificColumn : ColumnOfMainKey = 1 = add column 1 as MainKey, ColumnOfMainKey = 132 = add column 1 + 3 + 2 as MainKey,
 
-**SubKeyRow (int)**
-- Determine which row of excel will be added as subkey, if subkey data is valid, actual data of excel will package with **json object(map)**
-- Set it as 0 when you don't wanna add subkey to your converted data, actual data of excel will package with **json array(map)**
+**ColumnOfMainKey**
+- Determine which column will added as MainKey of converted json data (Look **MainKeyChooseType**).
 
-**FirstDataRow (int)**
-- Determine the which row for ExcelConverter to start reading as actual data when converting.
+**EnableSubKey**
+- When **Enable**/**Disable**, converted **sub json data** will be **json object(map)**/**json array(array)**,
 
-**Datalist (string array)**
+**SubKeyType**
+- Determine SubKey of converted json data will be Uppercase, LowerCase or Remain the same.
+
+**RowOfSubKey**
+- Determine which row of excel will be added as SubKey of converted json data.
+
+**RowOfFirstData**
+- Determine which row for ExcelConverter to start reading as actual data when converting.
+
+**Datalist**
 - List of sheet name that will apply settings above for converting.
 
 ## Converted result showcase
@@ -70,7 +77,7 @@ Excel sheet :
 
 Config :
 
-<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/WithMainKeyAndSubKey.png" height="50%" width="50%"/>
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/MainKeyAndSubKey.png" height="50%" width="50%"/>
 
 Result :
 ```json
@@ -118,7 +125,7 @@ Result :
 
 Config :
 
-<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/WithMainKeyOnly.png" height="50%" width="50%"/>
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/MainKeyOnly.png" height="50%" width="50%"/>
 
 Result :
 ```json
@@ -172,7 +179,7 @@ Result :
 
 Config :
 
-<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/WithSubkeyOnly.png" height="50%" width="50%"/>
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/SubkeyOnly.png" height="50%" width="50%"/>
 
 Result :
 ```json
@@ -219,11 +226,11 @@ Result :
 }
 ```
 
-### Double mainkey :
+### Multiple mainkey - FirstNColumnType:
 
 Config :
 
-<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/DoubleMainKey.png" height="50%" width="50%"/>
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/MultipleMainKey_FirstNColumnType.png" height="50%" width="50%"/>
 
 Result :
 ```json
@@ -264,11 +271,56 @@ Result :
 }
 ```
 
+### Multiple mainkey - SpecificColumnType:
+
+Config :
+
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/MultipleMainKey_SpecificColumnType.png" height="50%" width="50%"/>
+
+Result :
+```json
+{
+	"export_type": "JObject",
+	"data": {
+		"John15": {
+			"SubKey_Gender": "Male",
+			"SubKey_Height": 170,
+			"SubKey_Weight": "65kg",
+			"SubKey_Array": [
+				"Str_1",
+				"Str_2",
+				"Str_3"
+			]
+		},
+		"Marry9": {
+			"SubKey_Gender": "Female",
+			"SubKey_Height": 156,
+			"SubKey_Weight": "45kg",
+			"SubKey_Array": [
+				1,
+				2,
+				3
+			]
+		},
+		"Ken23": {
+			"SubKey_Gender": "Male",
+			"SubKey_Height": 182,
+			"SubKey_Weight": "70kg",
+			"SubKey_Array": [
+				true,
+				false,
+				true
+			]
+		}
+	}
+}
+```
+
 ### No key :
 
 Config :
 
-<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/WithoutMainKeyAndSubKey.png" height="50%" width="50%"/>
+<img src="https://github.com/JohnsonChenz/ExcelConverter/blob/master/Docs/NoKey.png" height="50%" width="50%"/>
 
 Result :
 ```json

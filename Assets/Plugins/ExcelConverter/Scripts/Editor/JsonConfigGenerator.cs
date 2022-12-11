@@ -28,8 +28,7 @@ namespace ExcelConverter.Editor
         {
             var win = GetWindow<JsonConfigGenerator>("Json Generator");
             win.Show();
-            win.minSize = new Vector2(465, 700);
-            win.maxSize = new Vector2(465, 700);
+            win.minSize = new Vector2(550, 700);
         }
 
         private void OnEnable()
@@ -41,7 +40,7 @@ namespace ExcelConverter.Editor
             this.assetListProperty = this.serializedObject.FindProperty("jsonConfigList");
         }
 
-        private async void OnGUI()
+        private void OnGUI()
         {
             // 更新
             this.serializedObject.Update();
@@ -87,7 +86,7 @@ namespace ExcelConverter.Editor
                 }
             }
 
-            GUILayout.Space(75);
+            GUILayout.FlexibleSpace();
 
             if (GUILayout.Button("Save Json File", GUILayout.Width(100)))
             {
@@ -105,7 +104,7 @@ namespace ExcelConverter.Editor
                 }
             }
 
-            GUILayout.Space(75);
+            GUILayout.FlexibleSpace();
 
             if (GUILayout.Button("Reset", GUILayout.Width(100)))
             {

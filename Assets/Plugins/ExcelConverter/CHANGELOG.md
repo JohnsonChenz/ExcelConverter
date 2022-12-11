@@ -1,5 +1,17 @@
 ## CHANGELOG
 
+### v1.1.0
+
+#### Changes on Json Config Generetor :
+ 
+- Because changes below, you may need to remake your own json config.
+- Added option to enable MainKey/Subkey
+- Added **MainKeySelectType**, please checkout **README.md** to see how it works.
+- More approprivately naming for some variables.
+
+#### Others :
+- Script optimization & simplfied on FileExporter & JsonConfig & SheetExportConfig
+
 ### v1.0.4
 - Deleted none-use using at FileExporter.cs
 
