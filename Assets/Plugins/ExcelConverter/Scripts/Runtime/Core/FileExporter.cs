@@ -35,20 +35,20 @@ namespace ExcelConverter
 
         public async Task<int> SaveJsonFiles()
         {
-            return await this._ReadAllSheets(new Func<SheetExportConfig, string, Task<int>>[] { this._SaveSheetJson });
+            return await this._ReadAllSheets(new Func<SheetExportConfig, Task<int>>[] { this._SaveSheetJson });
         }
 
         public async Task<int> SaveBsonFiles()
         {
-            return await this._ReadAllSheets(new Func<SheetExportConfig, string, Task<int>>[] { this._SaveSheetBson });
+            return await this._ReadAllSheets(new Func<SheetExportConfig, Task<int>>[] { this._SaveSheetBson });
         }
 
         public async Task<int> SaveBothFiles()
         {
-            return await this._ReadAllSheets(new Func<SheetExportConfig, string, Task<int>>[] { this._SaveSheetJson, this._SaveSheetBson });
+            return await this._ReadAllSheets(new Func<SheetExportConfig, Task<int>>[] { this._SaveSheetJson, this._SaveSheetBson });
         }
 
-        private async Task<int> _ReadAllSheets(Func<SheetExportConfig, string, Task<int>>[] exportFuncs)
+        private async Task<int> _ReadAllSheets(Func<SheetExportConfig, Task<int>>[] exportFuncs)
         {
             if (this.listSheetExportConfig.Count <= 0)
             {
@@ -57,114 +57,136 @@ namespace ExcelConverter
             }
 
             this.progressBar.lowValue = 0;
-            this.progressBar.highValue = this.listSheetExportConfig.Count * exportFuncs.Length;
+            this.progressBar.value = 0;
+            this.progressBar.highValue = this.listSheetExportConfig.Sum(x => x.sheets.Count) * exportFuncs.Length;
 
             int result = 0;
 
             foreach (var exportFunc in exportFuncs)
             {
-                for (var i = 0; i < this.listSheetExportConfig.Count; i++)
+                foreach (var sheetExportConfig in this.listSheetExportConfig)
                 {
-                    // 檢測Sheet名稱是否有重名
-                    string adjustedName = this._VerifyDuplicatedName(this.listSheetExportConfig[i].sheet);
-
-                    this.progressBar.value = result += await exportFunc(this.listSheetExportConfig[i], adjustedName);
-
-                    await Task.Yield();
+                    result += await exportFunc(sheetExportConfig);
                 }
             }
 
             return result;
         }
 
-        private async Task<int> _SaveSheetJson(SheetExportConfig exportSettings, string fileName)
+        private async Task<int> _SaveSheetJson(SheetExportConfig sheetExportConfig)
         {
-            if (exportSettings.sheet.Rows.Count <= 0)
+            int result = 0;
+
+            foreach (var sheet in sheetExportConfig.sheets)
             {
-                LogAdder.AddLogError(string.Format("內容為空 文件名:{0}", exportSettings.sheet.TableName));
-                return 0;
+                // 檢測Sheet名稱是否有重名
+                string adjustedName = this._VerifyDuplicatedName(sheet);
+
+                // 更新進度條顯示
+                this.progressBar.value++;
+                this.progressBar.title = $" ({this.progressBar.value}/{this.progressBar.highValue}) 【{adjustedName}.json】";
+
+                if (sheet.Rows.Count <= 0)
+                {
+                    LogAdder.AddLogError(string.Format("內容為空 文件名:{0}", sheet.TableName));
+                    continue;
+                }
+
+                // 將Sheet的資料序列化成Json字串
+                string json = await this._SerializeSheetToJson(sheet, sheetExportConfig.jsonConfig, this.formatJson);
+
+                // 儲存檔案
+                string dstFolder = this.savePath + "/json/";
+
+                // 如果沒有資料夾就創一個
+                if (!Directory.Exists(dstFolder))
+                {
+                    Directory.CreateDirectory(dstFolder);
+                }
+
+                string path = dstFolder + adjustedName + ".json";
+
+                // 輸出檔案至目標路徑
+                File.WriteAllText(path, json);
+
+                result++;
+
+                await Task.Yield();
             }
 
-            // 將Sheet的資料序列化成Json字串
-            string json = await this._SerializeSheetToJson(exportSettings.sheet, exportSettings, this.formatJson);
-
-            // 儲存檔案
-            string dstFolder = this.savePath + "/json/";
-
-            // 如果沒有資料夾就創一個
-            if (!Directory.Exists(dstFolder))
-            {
-                Directory.CreateDirectory(dstFolder);
-            }
-
-            string path = dstFolder + fileName + ".json";
-
-            // 更新進度調顯示
-            this.progressBar.title = $"({this.progressBar.value}/{this.progressBar.highValue}) 【{fileName}.json】";
-
-            // 輸出檔案至目標路徑
-            File.WriteAllText(path, json);
-
-            return 1;
+            return result;
         }
 
-        private async Task<int> _SaveSheetBson(SheetExportConfig exportSettings, string fileName)
+        private async Task<int> _SaveSheetBson(SheetExportConfig sheetExportConfig)
         {
-            if (exportSettings.sheet.Rows.Count <= 0)
+            int result = 0;
+
+            foreach (var sheet in sheetExportConfig.sheets)
             {
-                LogAdder.AddLogError(string.Format("內容為空 文件名:{0}", exportSettings.sheet.TableName));
-                return 0;
+                // 檢測Sheet名稱是否有重名
+                string adjustedName = this._VerifyDuplicatedName(sheet);
+
+                // 更新進度條顯示
+                this.progressBar.value++;
+                this.progressBar.title = $"({this.progressBar.value}/{this.progressBar.highValue}) 【{adjustedName}.bytes】";
+
+                if (sheet.Rows.Count <= 0)
+                {
+                    LogAdder.AddLogError(string.Format("內容為空 文件名:{0}", sheet.TableName));
+                    continue;
+                }
+
+                // 將Sheet的資料序列化成Json字串
+                string json = await this._SerializeSheetToJson(sheet, sheetExportConfig.jsonConfig, this.formatJson);
+
+                // 儲存檔案
+                string dstFolder = this.savePath + "/bson/";
+
+                // 如果沒有資料夾就創一個
+                if (!Directory.Exists(dstFolder))
+                {
+                    Directory.CreateDirectory(dstFolder);
+                }
+
+                // 將Json字串轉為JObject
+                JObject jObj = JObject.Parse(json);
+
+                byte[] bson = jObj.ToBson();
+
+                string path = dstFolder + adjustedName + ".bytes";
+
+                // 輸出檔案至目標路徑
+                File.WriteAllBytes(path, bson);
+
+                result++;
+
+                await Task.Yield();
             }
 
-            // 將Sheet的資料序列化成Json字串
-            string json = await this._SerializeSheetToJson(exportSettings.sheet, exportSettings, this.formatJson);
-
-            // 儲存檔案
-            string dstFolder = this.savePath + "/bson/";
-
-            // 如果沒有資料夾就創一個
-            if (!Directory.Exists(dstFolder))
-            {
-                Directory.CreateDirectory(dstFolder);
-            }
-
-            // 將Json字串轉為JObject
-            JObject jObj = JObject.Parse(json);
-
-            byte[] bson = jObj.ToBson();
-
-            string path = dstFolder + fileName + ".bytes";
-
-            // 更新進度調顯示
-            this.progressBar.title = $"({this.progressBar.value}/{this.progressBar.highValue}) 【{fileName}.bytes】";
-
-            // 輸出檔案至目標路徑
-            File.WriteAllBytes(path, bson);
-
-            return 1;
+            return result;
         }
 
-        private async Task<string> _SerializeSheetToJson(DataTable sheet, SheetExportConfig exportSettings, bool formatJson)
+        private async Task<string> _SerializeSheetToJson(DataTable sheet, JsonConfig jsonConfig, bool formatJson)
         {
             int columns = sheet.Columns.Count;
             int rows = sheet.Rows.Count;
             string json = "";
 
             // 如果有主Key
-            if (exportSettings.jsonConfig.enableMainKey)
+            if (jsonConfig.enableMainKey)
             {
                 // 宣告存放MainKey的Column
                 List<int> mainKeyColumns = new List<int>();
-                switch (exportSettings.jsonConfig.mainKeySelectType)
+                switch (jsonConfig.mainKeySelectType)
                 {
                     case JsonConfig.MainKeySelectType.FirstNColumn:
-                        for (int i = 0; i < exportSettings.jsonConfig.columnOfMainKey; i++)
+                        for (int i = 0; i < jsonConfig.columnOfMainKey; i++)
                         {
                             mainKeyColumns.Add(i);
                         }
                         break;
                     case JsonConfig.MainKeySelectType.SpecificColumn:
-                        string specificColumns = exportSettings.jsonConfig.columnOfMainKey.ToString();
+                        string specificColumns = jsonConfig.columnOfMainKey.ToString();
                         for (int i = 0; i < specificColumns.Length; i++)
                         {
                             int column = Convert.ToInt32(specificColumns[i].ToString()) - 1;
@@ -174,14 +196,14 @@ namespace ExcelConverter
                 }
 
                 // 如果有副Key
-                if (exportSettings.jsonConfig.enableSubKey)
+                if (jsonConfig.enableSubKey)
                 {
                     // 使用Map包Map處理
                     Dictionary<string, Dictionary<string, object>> columnData = new Dictionary<string, Dictionary<string, object>>();
 
                     // 由於Excel內Index(或是說外人眼中的Index)跟程式中不同，故減1
                     // 以"列"做讀取
-                    for (int i = exportSettings.jsonConfig.rowOfFirstData - 1; i < rows; i++)
+                    for (int i = jsonConfig.rowOfFirstData - 1; i < rows; i++)
                     {
                         // 存放列資料
                         Dictionary<string, object> rowData = new Dictionary<string, object>();
@@ -192,7 +214,7 @@ namespace ExcelConverter
                             // 副Key將不包含主Key欄之資料
                             if (mainKeyColumns.Contains(j)) continue;
 
-                            string subKey = sheet.Rows[exportSettings.jsonConfig.rowOfSubKey - 1][j].ToString().TrimEnd();  // 取第subKeyRow列的j欄當副Key，Index同樣做減1處理                                                                         
+                            string subKey = sheet.Rows[jsonConfig.rowOfSubKey - 1][j].ToString().TrimEnd();  // 取第subKeyRow列的j欄當副Key，Index同樣做減1處理                                                                         
 
                             // 刪除副Key中的@#字元                                                             
                             if (subKey.Contains("@") || subKey.Contains("#")) subKey = subKey.Replace("@", string.Empty).Replace("#", string.Empty);
@@ -200,7 +222,7 @@ namespace ExcelConverter
                             if (subKey.ToUpper() == "EMPTY" || subKey.Contains("*") || subKey == "") continue; // 假設副Key資料為empty或*或空字元 跳過
 
                             // 副Key大小寫設定
-                            switch (exportSettings.jsonConfig.subKeyType)
+                            switch (jsonConfig.subKeyType)
                             {
                                 case JsonConfig.KeyType.None:
                                     break;
@@ -270,7 +292,7 @@ namespace ExcelConverter
                             try
                             {
                                 // 主Key大小寫設定
-                                switch (exportSettings.jsonConfig.mainKeyType)
+                                switch (jsonConfig.mainKeyType)
                                 {
                                     case JsonConfig.KeyType.None:
                                         break;
@@ -310,7 +332,7 @@ namespace ExcelConverter
 
                     // 由於Excel內Index(或是說外人眼中的Index)跟程式中不同，故減1
                     // 以"列"做讀取
-                    for (int i = exportSettings.jsonConfig.rowOfFirstData - 1; i < rows; i++)
+                    for (int i = jsonConfig.rowOfFirstData - 1; i < rows; i++)
                     {
                         List<object> rowData = new List<object>();
 
@@ -377,7 +399,7 @@ namespace ExcelConverter
                             try
                             {
                                 // 主Key大小寫設定
-                                switch (exportSettings.jsonConfig.mainKeyType)
+                                switch (jsonConfig.mainKeyType)
                                 {
                                     case JsonConfig.KeyType.None:
                                         break;
@@ -418,10 +440,10 @@ namespace ExcelConverter
 
                 // 由於Excel內Index(或是說外人眼中的Index)跟程式中不同，故減1
                 // 以"列"做讀取
-                for (int i = exportSettings.jsonConfig.rowOfFirstData - 1; i < rows; i++)
+                for (int i = jsonConfig.rowOfFirstData - 1; i < rows; i++)
                 {
                     // 如果有副Key
-                    if (exportSettings.jsonConfig.enableSubKey)
+                    if (jsonConfig.enableSubKey)
                     {
                         // 存放列資料
                         Dictionary<string, object> rowData = new Dictionary<string, object>();
@@ -429,7 +451,7 @@ namespace ExcelConverter
                         // 以"欄"去設置副Key及資料
                         for (int j = 0; j < columns; j++)
                         {
-                            string subKey = sheet.Rows[exportSettings.jsonConfig.rowOfSubKey - 1][j].ToString().TrimEnd(); // 取第subKeyRow列的j欄當副Key，Index同樣做減1處理                                                                         
+                            string subKey = sheet.Rows[jsonConfig.rowOfSubKey - 1][j].ToString().TrimEnd(); // 取第subKeyRow列的j欄當副Key，Index同樣做減1處理                                                                         
 
                             // 刪除副Key中的@#字元                                                             
                             if (subKey.Contains("@") || subKey.Contains("#")) subKey = subKey.Replace("@", string.Empty).Replace("#", string.Empty);
@@ -437,7 +459,7 @@ namespace ExcelConverter
                             if (subKey.ToUpper() == "EMPTY" || subKey.Contains("*") || subKey == "") continue; // 假設副Key資料為empty或*或空字元 跳過
 
                             // 副Key大小寫設定                                                                 
-                            switch (exportSettings.jsonConfig.subKeyType)
+                            switch (jsonConfig.subKeyType)
                             {
                                 case JsonConfig.KeyType.None:
                                     break;
@@ -520,12 +542,15 @@ namespace ExcelConverter
         {
             for (int i = 0; i < this.listSheetExportConfig.Count; i++)
             {
-                // 如果兩個Sheet隸屬的Excel檔案不同，但名稱相同，就算重名
-                if (this.listSheetExportConfig[i].sheet.Namespace != sheet.Namespace && this.listSheetExportConfig[i].sheet.TableName == sheet.TableName)
+                for (int j = 0; j < this.listSheetExportConfig[i].sheets.Count; j++)
                 {
-                    string adjustedName = "[" + sheet.Namespace + "]" + sheet.TableName;
-                    LogAdder.AddLogError(string.Format("檢測到Sheet有重名 Sheet名稱:{0}，輸出檔名將會更改為:{1}!", sheet.TableName, adjustedName));
-                    return adjustedName;
+                    // 如果兩個Sheet隸屬的Excel檔案不同，但名稱相同，就算重名
+                    if (this.listSheetExportConfig[i].sheets[j].Namespace != sheet.Namespace && this.listSheetExportConfig[i].sheets[j].TableName == sheet.TableName)
+                    {
+                        string adjustedName = "[" + sheet.Namespace + "]" + sheet.TableName;
+                        LogAdder.AddLogError(string.Format("檢測到Sheet有重名 Sheet名稱:{0}，輸出檔名將會更改為:{1}!", sheet.TableName, adjustedName));
+                        return adjustedName;
+                    }
                 }
             }
             return sheet.TableName;

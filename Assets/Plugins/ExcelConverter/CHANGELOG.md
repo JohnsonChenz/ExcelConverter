@@ -1,5 +1,9 @@
 ## CHANGELOG
 
+### v1.1.1
+- Fixed : Error on building player due to the wrong setup of the Script Assembly Definition for runtime scripts.
+- Optimized code in FileExporter & ExcelConverter & SheetExportConfig related to sheet export process.
+
 ### v1.1.0
 
 #### Changes on Json Config Generetor :

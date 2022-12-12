@@ -9,13 +9,23 @@ namespace ExcelConverter
 {
     public class SheetExportConfig
     {
-        public DataTable sheet { get; private set; }
+        public List<DataTable> sheets { get; private set; }
         public JsonConfig jsonConfig { get; private set; }
 
-        public SheetExportConfig(DataTable sheet, JsonConfig jsonConfig)
+        public SheetExportConfig(JsonConfig jsonConfig)
         {
-            this.sheet = sheet;
             this.jsonConfig = jsonConfig;
+            this.sheets = new List<DataTable>();
+        }
+
+        public void AddSheet(DataTable sheet)
+        {
+            this.sheets.Add(sheet);
+        }
+
+        public bool Match(string tableName)
+        {
+            return this.jsonConfig.dataList.Contains(tableName);
         }
     }
 }
